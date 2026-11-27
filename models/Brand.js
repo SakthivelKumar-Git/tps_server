@@ -10,10 +10,13 @@ const brandSchema = new mongoose.Schema(
     origin: { type: String, default: '' },
     authorizedPartner: { type: Boolean, default: true },
     logoUrl: { type: String, default: '' },
-    categories: [{ type: String }]
+    categories: [{ type: String }],
+    status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' }
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'brands' }
 );
+
+brandSchema.index({ name: 1 });
 
 brandSchema.set('toJSON', {
   transform: (_, ret) => {
