@@ -3,8 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath, pathToFileURL } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = typeof import.meta?.url === 'string' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
 const DEFAULT_MIGRATIONS_DIR = path.resolve(__dirname, '../migrations');
 
 const computeChecksum = (filePath) => {

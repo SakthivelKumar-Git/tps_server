@@ -1,3 +1,7 @@
+# Cloudflare Wrangler
+.wrangler/
+.wrangler_config/
+
 # Dependencies
 node_modules/
 

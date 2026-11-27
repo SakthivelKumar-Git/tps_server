@@ -17,16 +17,16 @@ const initializeCoreConfig = async () => {
 
 export const connectDB = async () => {
   const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    console.error('MongoDB Atlas Connection Failed:');
-    console.error('MONGODB_URI is not defined in .env');
-    process.exit(1);
+  if (!uri || uri.includes('127.0.0.1') || uri.includes('localhost')) {
+    console.warn('MongoDB URI not configured or using local loopback. Running in-memory fallback.');
+    mongoConnected = false;
+    return;
   }
 
   try {
     const connection = await mongoose.connect(uri, {
       dbName: 'true_power_solutions',
-      serverSelectionTimeoutMS: 10000
+      serverSelectionTimeoutMS: 5000
     });
     mongoConnected = true;
 
@@ -37,8 +37,6 @@ export const connectDB = async () => {
     await initializeCoreConfig();
   } catch (error) {
     mongoConnected = false;
-    console.error('MongoDB Atlas Connection Failed:');
-    console.error(error.message);
-    process.exit(1);
+    console.warn('MongoDB Atlas Connection Warning:', error.message);
   }
 };

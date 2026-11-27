@@ -1,0 +1,11 @@
+name = "tps-server"
+main = "worker.js"
+compatibility_date = "2026-08-04"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NODE_ENV = "production"
+CLOUDFLARE_WORKER = "true"
+CLIENT_URL = "https://tps-client.pages.dev"
+ADMIN_EMAIL = "sakthi@gmail.com"
+ADMIN_NAME = "Sakthi"

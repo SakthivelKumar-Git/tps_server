@@ -107,6 +107,84 @@ class InMemoryStore {
     this.activityLogs.unshift(item);
     return item;
   }
+
+  getBrands() {
+    return this.brands;
+  }
+
+  getBrandById(id) {
+    return this.brands.find((b) => b.id === id || (b.name && b.name.toLowerCase() === id.toLowerCase())) || null;
+  }
+
+  addBrand(data) {
+    const brand = { id: data.id || `brand-${Date.now()}`, ...data };
+    this.brands.push(brand);
+    return brand;
+  }
+
+  updateBrand(id, data) {
+    const idx = this.brands.findIndex((b) => b.id === id);
+    if (idx === -1) return null;
+    this.brands[idx] = { ...this.brands[idx], ...data };
+    return this.brands[idx];
+  }
+
+  deleteBrand(id) {
+    const idx = this.brands.findIndex((b) => b.id === id);
+    if (idx === -1) return false;
+    this.brands.splice(idx, 1);
+    return true;
+  }
+
+  getProducts(params = {}) {
+    let list = [...this.products];
+    if (params.brand && params.brand !== 'All') {
+      list = list.filter((p) => (p.brand || '').toLowerCase() === params.brand.toLowerCase());
+    }
+    if (params.category && params.category !== 'All') {
+      list = list.filter((p) => (p.category || '').toLowerCase() === params.category.toLowerCase());
+    }
+    if (params.featured !== undefined) {
+      list = list.filter((p) => p.featured === params.featured);
+    }
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      list = list.filter((p) => (p.name || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
+    }
+    return list;
+  }
+
+  getProductById(id) {
+    return this.products.find((p) => p.id === id || p.slug === id) || null;
+  }
+
+  addProduct(data) {
+    const prod = { id: data.id || `prod-${Date.now()}`, ...data };
+    this.products.push(prod);
+    return prod;
+  }
+
+  updateProduct(id, data) {
+    const idx = this.products.findIndex((p) => p.id === id || p.slug === id);
+    if (idx === -1) return null;
+    this.products[idx] = { ...this.products[idx], ...data };
+    return this.products[idx];
+  }
+
+  deleteProduct(id) {
+    const idx = this.products.findIndex((p) => p.id === id || p.slug === id);
+    if (idx === -1) return false;
+    this.products.splice(idx, 1);
+    return true;
+  }
+
+  getServices() {
+    return this.services;
+  }
+
+  getServiceById(id) {
+    return this.services.find((s) => s.id === id) || null;
+  }
 }
 
 export const store = new InMemoryStore();

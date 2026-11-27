@@ -13,8 +13,8 @@ import { authorize, authorizeAny, authMiddleware } from '../middleware/auth.js';
 import { getMigrationStatus } from '../utils/migrator.js';
 import { escapeRegex, logActivity, parsePagination } from '../utils/crmHelpers.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = typeof import.meta?.url === 'string' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
 const UPLOADS_DIR = path.resolve(__dirname, '../uploads');
 
 const router = express.Router();
