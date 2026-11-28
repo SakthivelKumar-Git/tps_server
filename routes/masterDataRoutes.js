@@ -11,6 +11,7 @@ import ServiceArea from '../models/ServiceArea.js';
 import Dealer from '../models/Dealer.js';
 import Employee from '../models/Employee.js';
 import CompanySetting from '../models/CompanySetting.js';
+import { uploadProductImage } from '../middleware/upload.js';
 import { isMongoConnected } from '../config/db.js';
 import { store } from '../store/inMemoryStore.js';
 import { authMiddleware, requirePermission } from '../middleware/auth.js';
@@ -335,15 +336,43 @@ router.delete('/products/:id', authMiddleware, requirePermission('master:delete'
   }
 });
 
-// ==================== PUBLIC SERVICES ====================
+// ==================== PUBLIC SERVICES CATALOG ====================
+// Public GET — no auth needed (public website)
 router.get('/services', async (_req, res) => {
   try {
     if (isMongoConnected()) {
-      const services = await Service.find().sort({ createdAt: 1 });
+      const services = await Service.find({ isActive: true }).sort({ order: 1, createdAt: 1 });
       return res.json({ success: true, count: services.length, data: services });
     }
-    const services = store.getServices();
+    const services = (store.services || []).filter((s) => s.isActive !== false);
     res.json({ success: true, count: services.length, data: services });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Public active service categories for the website filters.
+router.get('/service-categories', async (_req, res) => {
+  try {
+    if (isMongoConnected()) {
+      const categories = await ServiceCategory.find({ status: 'Active' }).sort({ name: 1 });
+      return res.json({ success: true, count: categories.length, data: categories });
+    }
+    const categories = (store.serviceCategories || []).filter((category) => category.status !== 'Inactive');
+    return res.json({ success: true, count: categories.length, data: categories });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin GET all services, including inactive records.
+router.get('/admin/services', authMiddleware, async (_req, res) => {
+  try {
+    if (isMongoConnected()) {
+      const services = await Service.find().sort({ order: 1, createdAt: 1 });
+      return res.json({ success: true, count: services.length, data: services });
+    }
+    res.json({ success: true, count: (store.services || []).length, data: store.services || [] });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -356,9 +385,73 @@ router.get('/services/:id', async (req, res) => {
       if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
       return res.json({ success: true, data: service });
     }
-    const service = store.getServiceById(req.params.id);
+    const service = (store.services || []).find((s) => s.id === req.params.id);
     if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
     res.json({ success: true, data: service });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin CRUD — requires auth + master:create/edit/delete permissions
+router.post('/admin/services', authMiddleware, requirePermission('master:create'), uploadProductImage.single('serviceImage'), async (req, res) => {
+  try {
+    const payload = { ...req.body };
+    if (req.file) payload.imageUrl = `/uploads/${req.file.filename}`;
+    if (payload.isActive !== undefined) payload.isActive = payload.isActive === true || payload.isActive === 'true';
+    if (payload.order !== undefined) payload.order = Number(payload.order) || 0;
+    if (!payload.id) {
+      const slug = payload.title ? payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : 'service';
+      payload.id = `svc-${slug}-${Date.now()}`;
+    }
+    if (payload.isActive === undefined) payload.isActive = true;
+    if (isMongoConnected()) {
+      const existing = await Service.findOne({ id: payload.id });
+      if (existing) return res.status(409).json({ success: false, message: 'Service with this ID already exists' });
+      const created = await Service.create(payload);
+      return res.status(201).json({ success: true, data: created });
+    }
+    store.services = store.services || [];
+    store.services.unshift(payload);
+    res.status(201).json({ success: true, data: payload });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.put('/admin/services/:id', authMiddleware, requirePermission('master:edit'), uploadProductImage.single('serviceImage'), async (req, res) => {
+  try {
+    const update = stripImmutableFields(req.body);
+    if (req.file) update.imageUrl = `/uploads/${req.file.filename}`;
+    if (update.isActive !== undefined) update.isActive = update.isActive === true || update.isActive === 'true';
+    if (update.order !== undefined) update.order = Number(update.order) || 0;
+    if (isMongoConnected()) {
+      const updated = await Service.findOneAndUpdate(buildIdQuery(req.params.id), { $set: update }, { new: true });
+      if (!updated) return res.status(404).json({ success: false, message: 'Service not found' });
+      return res.json({ success: true, data: updated });
+    }
+    store.services = store.services || [];
+    const idx = store.services.findIndex((s) => s.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Service not found' });
+    store.services[idx] = { ...store.services[idx], ...update };
+    res.json({ success: true, data: store.services[idx] });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.delete('/admin/services/:id', authMiddleware, requirePermission('master:delete'), async (req, res) => {
+  try {
+    if (isMongoConnected()) {
+      const deleted = await Service.findOneAndDelete(buildIdQuery(req.params.id));
+      if (!deleted) return res.status(404).json({ success: false, message: 'Service not found' });
+      return res.json({ success: true, message: 'Service deleted successfully' });
+    }
+    store.services = store.services || [];
+    const idx = store.services.findIndex((s) => s.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Service not found' });
+    store.services.splice(idx, 1);
+    res.json({ success: true, message: 'Service deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

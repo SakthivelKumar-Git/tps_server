@@ -13,6 +13,7 @@ export const normalizePhone = (phone = '') => {
     return digits.slice(-10);
   }
   return digits || String(phone).trim();
+  
 };
 
 export const nextSequenceId = async (codePrefix, session = null) => {

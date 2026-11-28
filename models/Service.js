@@ -8,7 +8,11 @@ const serviceSchema = new mongoose.Schema(
     shortDescription: { type: String, default: '' },
     description: { type: String, default: '' },
     features: [{ type: String }],
-    icon: { type: String, default: 'Wrench' }
+    icon: { type: String, default: 'Wrench' },
+    iconName: { type: String, default: 'Wrench' },
+    imageUrl: { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

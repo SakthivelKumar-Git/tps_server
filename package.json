@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
+    "dev": "node --watch-path=./server.js --watch-path=./.env --watch-path=./cli --watch-path=./config --watch-path=./controllers --watch-path=./data --watch-path=./middleware --watch-path=./migrations --watch-path=./models --watch-path=./routes --watch-path=./seeders --watch-path=./store --watch-path=./utils server.js",
     "migrate:status": "node cli/migrate.js status",
     "migrate:up": "node cli/migrate.js up",
     "migrate:down": "node cli/migrate.js down",
